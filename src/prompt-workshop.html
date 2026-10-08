@@ -372,7 +372,8 @@
     await pause(reducedMotion()?0:260);
     if(epoch!==effectEpoch)return false;
     const height=node.getBoundingClientRect().height;node.style.overflow='hidden';
-    await animateElement(node,[{maxHeight:height+'px',opacity:1,paddingTop:'16px',paddingBottom:'16px',transform:'translateX(0)'},{maxHeight:'0px',opacity:0,paddingTop:'0px',paddingBottom:'0px',transform:'translateX(14px)'}],260);
+    // Hold the collapsed layout until renderCards removes it, so lower cards never jump back.
+    await animateElement(node,[{maxHeight:height+'px',opacity:1,paddingTop:'16px',paddingBottom:'16px',transform:'translateX(0)'},{maxHeight:'0px',opacity:0,paddingTop:'0px',paddingBottom:'0px',transform:'translateX(14px)'}],260,{fill:'forwards'});
     return epoch===effectEpoch;
   }
   async function animateRewrite(card,answer,node) {

@@ -2154,7 +2154,8 @@ html&gt;body{padding:0}&lt;/style&gt;
     await pause(reducedMotion()?0:260);
     if(epoch!==effectEpoch)return false;
     const height=node.getBoundingClientRect().height;node.style.overflow=&#x27;hidden&#x27;;
-    await animateElement(node,[{maxHeight:height+&#x27;px&#x27;,opacity:1,paddingTop:&#x27;16px&#x27;,paddingBottom:&#x27;16px&#x27;,transform:&#x27;translateX(0)&#x27;},{maxHeight:&#x27;0px&#x27;,opacity:0,paddingTop:&#x27;0px&#x27;,paddingBottom:&#x27;0px&#x27;,transform:&#x27;translateX(14px)&#x27;}],260);
+    // Hold the collapsed layout until renderCards removes it, so lower cards never jump back.
+    await animateElement(node,[{maxHeight:height+&#x27;px&#x27;,opacity:1,paddingTop:&#x27;16px&#x27;,paddingBottom:&#x27;16px&#x27;,transform:&#x27;translateX(0)&#x27;},{maxHeight:&#x27;0px&#x27;,opacity:0,paddingTop:&#x27;0px&#x27;,paddingBottom:&#x27;0px&#x27;,transform:&#x27;translateX(14px)&#x27;}],260,{fill:&#x27;forwards&#x27;});
     return epoch===effectEpoch;
   }
   async function animateRewrite(card,answer,node) {
