@@ -8,7 +8,9 @@ Open `index.html` in a browser. No server, API keys, or installation is needed. 
 
 The initial chat view includes sample projects and previous chats. The photography and biology chat entries switch between the two staged examples. On narrow screens, use the sidebar button to open the navigation.
 
-The workshop supports direct editing, optional suggestion cards, animated paragraph rewrites, a Completed drawer, and version history with comparison and restoration. A prompt jump and circular ripple reveal the workshop when entering it. The sidebar returns when going back to chat.
+The workshop supports direct editing, optional suggestion cards, animated paragraph rewrites, a Completed drawer, and version history with comparison and restoration. A prompt jump and circular ripple reveal the workshop when entering it.
+
+When leaving the workshop, suggestions and history fade away while the prompt moves back into chat and the sidebar returns. **Send current prompt** turns the editor into a submitted message, then reveals the illustrative response after it settles. **Back to chat** returns the prompt to an editable composer draft without sending it. Draft edits remain part of the same version history when reopening the workshop. Reduced motion skips the travel while preserving these outcomes.
 
 Suggestions and responses are scripted for demonstration. Nothing is sent to a model. The communication framework and interception policy remain research decisions; this prototype does not measure output quality or implement a live interceptor.
 

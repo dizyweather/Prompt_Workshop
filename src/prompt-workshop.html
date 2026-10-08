@@ -113,6 +113,9 @@
 #pw-demo .pw-ripple-surface { position:absolute; z-index:2; overflow:hidden; border-radius:18px; pointer-events:none; }
 #pw-demo .pw-ripple { position:absolute; border-radius:50%; border:1.5px solid light-dark(rgb(103 147 158 / .44),rgb(169 212 220 / .45)); box-shadow:0 0 16px light-dark(rgb(111 173 187 / .2),rgb(165 222 233 / .15)),inset 0 0 14px light-dark(rgb(111 173 187 / .12),rgb(165 222 233 / .1)); background:transparent; }
 #pw-demo .pw-card-waiting { visibility:hidden; }
+#pw-demo .pw-sidebar-close, #pw-demo .pw-sidebar-toggle { display:none; }
+#pw-demo.pw-returning #pw-editor-wrap, #pw-demo.pw-returning #pw-final-prompt, #pw-demo.pw-returning #pw-composer-input { visibility:hidden; }
+#pw-demo.pw-response-pending #pw-sent-view .pw-assistant, #pw-demo.pw-response-pending #pw-sent-view .pw-sent-label, #pw-demo.pw-response-pending #pw-sent-view > .pw-row { visibility:hidden; }
 #pw-demo.pw-typing .pw-editor-wrap { background:var(--pw-green-bg); border-color:var(--pw-green); }
 #pw-demo .pw-known { margin:0 0 14px; color:var(--pw-muted); font-size:12px; padding-left:10px; border-left:2px solid var(--pw-line); }
 #pw-demo .pw-ready { padding:24px 16px; text-align:center; color:var(--pw-muted); background:var(--pw-soft); border-radius:12px; }
@@ -195,7 +198,7 @@
         <span class="pw-avatar"><i data-lucide="sparkles" aria-hidden="true"></i></span>
         <div class="pw-assistant-body">
           <div id="pw-invitation" class="pw-invite">
-            <h2>Want to improve this prompt together?</h2>
+            <h2 id="pw-invite-title">Want to improve this prompt together?</h2>
             <p id="pw-invite-copy"></p>
             <div class="pw-row">
               <button type="button" id="pw-yes" class="pw-button pw-primary cursor-interaction">Yes, improve it <i data-lucide="arrow-right" aria-hidden="true"></i></button>
@@ -208,8 +211,8 @@
         <label for="pw-composer-input" class="pw-role">Message ChatGPT</label>
         <textarea id="pw-composer-input" placeholder="Choose an example above to try another prompt" aria-label="Message composer, waiting for your prompt decision" disabled></textarea>
         <div class="pw-composer-bottom">
-          <span class="pw-small pw-muted">Your prompt is waiting for your decision above.</span>
-          <button type="button" class="pw-button pw-primary pw-send-icon" aria-label="Send, unavailable while a prompt is waiting" disabled><i data-lucide="arrow-up" aria-hidden="true"></i></button>
+          <span id="pw-composer-note" class="pw-small pw-muted" role="status">Your prompt is waiting for your decision above.</span>
+          <button type="button" id="pw-compose-send" class="pw-button pw-primary pw-send-icon cursor-interaction" aria-label="Send draft" disabled><i data-lucide="arrow-up" aria-hidden="true"></i></button>
         </div>
       </div>
       <p class="pw-footer-note">Demonstration only. No messages are sent to a model.</p>
@@ -315,14 +318,20 @@
   let activeRewrite = null;
   let flight = null;
   let sidebarOpen = false;
+  let returning = false;
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const states = {};
-  const fresh = key => ({draft:examples[key].prompt, original:examples[key].prompt, stage:'chat', skipped:[], answers:{}, versions:[{text:examples[key].prompt,label:'Original prompt',answers:{}}], preview:null, compare:false, route:''});
+  const fresh = key => ({draft:examples[key].prompt, original:examples[key].prompt, stage:'chat', chatDraft:false, skipped:[], answers:{}, versions:[{text:examples[key].prompt,label:'Original prompt',answers:{}}], preview:null, compare:false, route:''});
   const icons = () => { if(globalThis.lucide) lucide.createIcons({attrs:{width:16,height:16}}); };
   const pause = ms => new Promise(resolve=>setTimeout(resolve,ms));
   function setBusy(value) {
     busy=value;root.dataset.busy=String(value);
     el('pw-editor').readOnly=value||state.preview!==null;
+    el('pw-composer-input').readOnly=value;
+    el('pw-compose-send').disabled=value||!state.chatDraft||!state.draft.trim();
+    el('pw-no').disabled=returning||!state.draft.trim();
+    el('pw-back').disabled=returning;
+    el('pw-finish').disabled=returning;
     el('pw-timeline').closest('.pw-history').inert=value;
     el('pw-cards').inert=value;el('pw-completed').inert=value;
     el('pw-finish').firstChild.textContent=value&&activeRewrite?'Finish & send ':'Send current prompt ';
@@ -347,7 +356,8 @@
     root.querySelector('.pw-app').style.clipPath='';
     root.style.height='';root.style.overflow='';
     delete root.dataset.transition;
-    root.classList.remove('pw-entering','pw-typing');
+    root.classList.remove('pw-entering','pw-typing','pw-returning','pw-response-pending');
+    returning=false;
     entering=false;revealed=null;
     const pending=activeRewrite;activeRewrite=null;
     setBusy(false);
@@ -476,11 +486,17 @@
     editor.style.height='auto';
     editor.style.height=Math.max(270,editor.scrollHeight)+'px';
   }
+  function fitComposer(){
+    const composer=el('pw-composer-input');
+    if(el('pw-chat-view').hidden)return;
+    composer.style.height='auto';
+    composer.style.height=Math.max(58,composer.scrollHeight)+'px';
+  }
   const notify = message => { el('pw-notice').textContent=message; };
   const saveHost = () => {
     if(!window.openai || !window.openai.setWidgetState) return;
     const versions=state.versions.slice(-12).map(v=>({text:v.text.slice(0,2500),label:v.label,answers:v.answers}));
-    const snapshot={schema:3,scenario,draft:state.draft.slice(0,2500),original:state.original.slice(0,2500),stage:state.stage,skipped:state.skipped,answers:state.answers,versions,preview:null,compare:state.compare,route:state.route,completedOpen:el('pw-completed').open};
+    const snapshot={schema:3,scenario,draft:state.draft.slice(0,2500),original:state.original.slice(0,2500),stage:state.stage,chatDraft:state.chatDraft,skipped:state.skipped,answers:state.answers,versions,preview:null,compare:state.compare,route:state.route,completedOpen:el('pw-completed').open};
     if(JSON.stringify(snapshot).length>14500) snapshot.versions=versions.slice(-3);
     lastSavedSnapshot=JSON.stringify(snapshot);
     window.openai.setWidgetState({modelContent:{example:examples[scenario].title,stage:state.stage,currentPrompt:state.draft.slice(0,2500)},privateContent:snapshot}).catch(()=>{});
@@ -657,8 +673,19 @@
   function renderChat() {
     const example=examples[scenario];
     el('pw-chat-prompt').textContent=state.draft;
-    el('pw-invite-copy').textContent=state.versions.length>1?'Your revised draft is saved. Continue shaping it, or send it as it is.':example.invite;
-    el('pw-yes').firstChild.textContent=state.versions.length>1?'Yes, keep improving ':'Yes, improve it ';
+    el('pw-chat-prompt').hidden=state.chatDraft;
+    el('pw-invite-title').textContent=state.chatDraft?'Your prompt is saved as a draft':'Want to improve this prompt together?';
+    el('pw-invite-copy').textContent=state.chatDraft?'Edit your draft below, return to the workshop, or send it when you’re ready.':state.versions.length>1?'Your revised draft is saved. Continue shaping it, or send it as it is.':example.invite;
+    el('pw-yes').firstChild.textContent=state.chatDraft?'Continue in workshop ':state.versions.length>1?'Yes, keep improving ':'Yes, improve it ';
+    el('pw-no').textContent=state.chatDraft?'Send draft':'No, send as is';
+    el('pw-no').disabled=returning||!state.draft.trim();
+    const composer=el('pw-composer-input');
+    composer.disabled=!state.chatDraft;composer.readOnly=busy;
+    composer.value=state.chatDraft?state.draft:'';
+    composer.setAttribute('aria-label',state.chatDraft?'Edit your saved prompt draft':'Message composer, waiting for your prompt decision');
+    el('pw-composer-note').textContent=state.chatDraft?'Saved draft · edit or send when you’re ready.':'Your prompt is waiting for your decision above.';
+    el('pw-compose-send').disabled=busy||!state.chatDraft||!state.draft.trim();
+    fitComposer();
   }
   function responseText() {
     const details=examples[scenario].cards.map(card=>{const c=coverage(card);return c?card.label+': '+c.text:null;}).filter(Boolean);
@@ -690,18 +717,69 @@
     icons();
   }
   function workshop() {
+    if(returning)return;
+    if(state.chatDraft)flushManual();
     if(sidebarOpen){sidebarOpen=false;renderSidebar();}
-    const sourceNode=el(state.stage==='sent'?'pw-final-prompt':'pw-chat-prompt');
+    const sourceNode=el(state.stage==='sent'?'pw-final-prompt':state.chatDraft?'pw-composer-input':'pw-chat-prompt');
     const sourceStyle=getComputedStyle(sourceNode),app=root.querySelector('.pw-app');
     const scene=app.cloneNode(true);
     scene.querySelector('#'+sourceNode.id).style.visibility='hidden';
     for(const node of scene.querySelectorAll('[id]'))node.removeAttribute('id');
     const source={rect:sourceNode.getBoundingClientRect(),scene,rootHeight:root.getBoundingClientRect().height,appHeight:app.getBoundingClientRect().height,fontSize:parseFloat(sourceStyle.fontSize),lineHeight:parseFloat(sourceStyle.lineHeight)/parseFloat(sourceStyle.fontSize),paddingTop:parseFloat(sourceStyle.paddingTop),paddingBottom:parseFloat(sourceStyle.paddingBottom)};
-    cancelEffects();state.stage='workshop';state.preview=null;notify('');
+    cancelEffects();state.stage='workshop';state.chatDraft=false;state.preview=null;notify('');
     enterWorkshop(source);saveHost();
   }
   function send(route) {
-    cancelEffects();flushManual();state.stage='sent';state.route=route;state.preview=null;render();saveHost();
+    if(returning||!state.draft.trim())return;
+    if(state.stage==='workshop'){returnToChat('sent',route);return;}
+    cancelEffects();flushManual();state.stage='sent';state.chatDraft=false;state.route=route;state.preview=null;render();saveHost();
+  }
+  async function returnToChat(destination,route=''){
+    if(returning)return;
+    cancelEffects();flushManual();state.preview=null;fitEditor();
+    const source=el('pw-editor').getBoundingClientRect(),bounds=root.getBoundingClientRect();
+    const sourceStyle=getComputedStyle(el('pw-editor'));
+    const text=state.draft;
+    state.stage=destination;state.chatDraft=destination==='chat';state.route=route;sidebarOpen=false;
+    if(reducedMotion()){render();setBusy(false);saveHost();if(state.chatDraft)el('pw-composer-input').focus({preventScroll:true});return;}
+    const epoch=++effectEpoch;returning=true;setBusy(true);
+    root.classList.add('pw-returning');if(destination==='sent')root.classList.add('pw-response-pending');
+    root.dataset.transition='return-lift';root.style.height=bounds.height+'px';root.style.overflow='clip';
+    const clone=document.createElement('div');clone.className='pw-flying-prompt';clone.textContent=text;clone.setAttribute('aria-hidden','true');
+    Object.assign(clone.style,{left:(source.left-bounds.left)+'px',top:(source.top-bounds.top)+'px',width:source.width+'px',height:source.height+'px',fontSize:sourceStyle.fontSize,lineHeight:sourceStyle.lineHeight,padding:sourceStyle.padding,borderWidth:'0px'});
+    const layer=document.createElement('div');layer.className='pw-flight-layer';layer.setAttribute('aria-hidden','true');layer.append(clone);root.append(layer);flight=layer;saveHost();
+    const departures=[...root.querySelectorAll('#pw-workshop-view .pw-history,#pw-workshop-view .pw-suggestions-side,#pw-workshop-view .pw-section-heading,#pw-workshop-view .pw-workshop-top,#pw-workshop-view .pw-workshop-bottom,#pw-notice')];
+    await Promise.all([animateElement(clone,[{transform:'translateY(0)'},{transform:'translateY(-8px)'}],150),...departures.map(node=>animateElement(node,[{opacity:1},{opacity:0,transform:'translateY(6px)'}],150))]);
+    if(epoch!==effectEpoch)return;
+    render();setBusy(true);
+    const targetNode=el(destination==='sent'?'pw-final-prompt':'pw-composer-input');
+    const target=targetNode.getBoundingClientRect(),targetStyle=getComputedStyle(targetNode);
+    const finalHeight=root.querySelector('.pw-demo-bar').getBoundingClientRect().height+root.querySelector('.pw-app').getBoundingClientRect().height;
+    animateElement(root.querySelector('.pw-main'),[{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],320);
+    animateElement(el('pw-sidebar'),[{opacity:0,transform:'translateX(-24px)'},{opacity:1,transform:'translateX(0)'}],350);
+    root.dataset.transition=destination==='sent'?'return-message':'return-draft';
+    const mix=(a,b,t)=>a+(b-a)*t;
+    const startFont=parseFloat(sourceStyle.fontSize),endFont=parseFloat(targetStyle.fontSize);
+    const startLine=parseFloat(sourceStyle.lineHeight)/startFont,endLine=parseFloat(targetStyle.lineHeight)/endFont||1.55;
+    const sides=['Top','Right','Bottom','Left'];
+    clone.style.transform='none';
+    if(!await tween(520,p=>{
+      const t=1-Math.pow(1-p,3);
+      Object.assign(clone.style,{left:mix(source.left-bounds.left,target.left-bounds.left,t)+'px',top:(mix(source.top-bounds.top-8,target.top-bounds.top,t)-Math.sin(p*Math.PI)*12)+'px',width:mix(source.width,target.width,t)+'px',height:mix(source.height,target.height,t)+'px',fontSize:mix(startFont,endFont,t)+'px',lineHeight:String(mix(startLine,endLine,t)),borderRadius:mix(12,destination==='sent'?22:8,t)+'px',background:'var(--pw-raised)',boxShadow:'0 '+(16*(1-t))+'px '+(44*(1-t))+'px light-dark(rgb(0 0 0 / '+(.14*(1-t))+'),rgb(0 0 0 / '+(.4*(1-t))+'))'});
+      for(const side of sides)clone.style['padding'+side]=mix(parseFloat(sourceStyle['padding'+side]),parseFloat(targetStyle['padding'+side]),t)+'px';
+      root.style.height=mix(bounds.height,finalHeight,t)+'px';
+    },epoch))return;
+    root.dataset.transition='return-settle';
+    await animateElement(clone,[{transform:'translateY(0)'},{offset:.5,transform:'translateY(2px)'},{transform:'translateY(0)'}],100);
+    if(epoch!==effectEpoch)return;
+    layer.remove();flight=null;root.style.height='';root.style.overflow='';root.classList.remove('pw-returning');
+    if(destination==='sent'){
+      await pause(160);if(epoch!==effectEpoch)return;
+      root.classList.remove('pw-response-pending');
+      animateElement(el('pw-sent-view').querySelector('.pw-assistant'),[{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],240);
+    }
+    returning=false;delete root.dataset.transition;setBusy(false);saveHost();
+    if(destination==='chat')el('pw-composer-input').focus({preventScroll:true});
   }
   function selectExample(key) {
     sidebarOpen=false;
@@ -724,7 +802,8 @@
   el('pw-yes').addEventListener('click',workshop);
   el('pw-no').addEventListener('click',()=>send('Sent without workshop'));
   el('pw-finish').addEventListener('click',()=>send('Current prompt sent from workshop'));
-  el('pw-back').addEventListener('click',()=>{cancelEffects();flushManual();state.stage='chat';state.preview=null;render();saveHost();});
+  el('pw-back').addEventListener('click',()=>returnToChat('chat'));
+  el('pw-compose-send').addEventListener('click',()=>send('Saved draft sent from chat'));
   el('pw-return-edit').addEventListener('click',workshop);
   el('pw-editor').addEventListener('input',()=>{
     if(state.preview!==null||busy)return;
@@ -734,6 +813,14 @@
     notify('Editing… changes are grouped into a version when you pause.');
     renderCards();
     pendingSave=setTimeout(()=>{checkpoint('Manual edit');renderChat();notify('Manual edit saved as a version.');saveHost();},900);
+  });
+  el('pw-composer-input').addEventListener('input',()=>{
+    if(!state.chatDraft||busy)return;
+    state.draft=el('pw-composer-input').value;fitComposer();clearTimeout(pendingSave);
+    el('pw-compose-send').disabled=!state.draft.trim();
+    el('pw-no').disabled=!state.draft.trim();
+    el('pw-composer-note').textContent='Editing draft…';
+    pendingSave=setTimeout(()=>{checkpoint('Manual edit');renderChat();saveHost();},900);
   });
   el('pw-current').addEventListener('click',()=>{state.preview=null;el('pw-editor').value=state.draft;renderHistory();renderCards();notify('Current draft selected.');saveHost();});
   el('pw-compare').addEventListener('click',()=>{if(state.preview===null)flushManual();state.compare=!state.compare;renderHistory();saveHost();});
@@ -750,6 +837,7 @@
     scenario=snapshot.scenario;state={...fresh(scenario),...snapshot,preview:null};
     if(!['chat','workshop','sent'].includes(state.stage))state.stage='chat';
     if(!Array.isArray(state.skipped))state.skipped=[];
+    if(typeof state.chatDraft!=='boolean')state.chatDraft=false;
     states[scenario]=state;el('pw-completed').open=!!snapshot.completedOpen;render();return true;
   }
   if(!restoreHost(window.openai?.widgetState?.privateContent))selectExample('portfolio');
@@ -758,6 +846,8 @@
     if(snapshot && JSON.stringify(snapshot)!==lastSavedSnapshot){clearTimeout(pendingSave);restoreHost(snapshot);}
   });
   new ResizeObserver(fitEditor).observe(root.querySelector('.pw-editor-side'));
+  let composerWidth=-1;
+  new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==composerWidth){composerWidth=width;fitComposer();}}).observe(root.querySelector('.pw-composer'));
   if(globalThis.Tweak) {
     const design={editorShare:54,spacing:24};
     const applyDesign=()=>{root.style.setProperty('--pw-edit-width',String(design.editorShare/(100-design.editorShare))+'fr');root.style.setProperty('--pw-gap',design.spacing+'px');};
