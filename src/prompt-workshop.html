@@ -308,7 +308,6 @@
   let pendingSave;
   let activeAnswers = {};
   let editingAnswer = null;
-  let lastSavedSnapshot = '';
   let busy = false;
   let entering = false;
   let revealed = null;
@@ -404,14 +403,14 @@
     checkpoint(card.sectionLabel+' clarified');renderChat();
     if(!await collapseCard(card,node,'Updated',epoch))return;
     const previous=cardRects();setBusy(false);renderCards();renderHistory();moveRemaining(previous);icons();
-    notify(card.sectionLabel+' rewritten and saved. Find the answer in Completed.');saveHost();
+    notify(card.sectionLabel+' rewritten and saved. Find the answer in Completed.');
   }
   async function skipCard(card,node) {
     if(busy||state.preview!==null)return;
     state.skipped=[...new Set([...state.skipped,card.id])];editingAnswer=null;
     const epoch=++effectEpoch;setBusy(true);
     if(!await collapseCard(card,node,'Skipped',epoch))return;
-    const previous=cardRects();setBusy(false);renderCards();moveRemaining(previous);icons();notify(card.label+' skipped. Its paragraph is unchanged.');saveHost();
+    const previous=cardRects();setBusy(false);renderCards();moveRemaining(previous);icons();notify(card.label+' skipped. Its paragraph is unchanged.');
   }
   async function enterWorkshop(source) {
     const epoch=++effectEpoch;
@@ -493,14 +492,6 @@
     composer.style.height=Math.max(58,composer.scrollHeight)+'px';
   }
   const notify = message => { el('pw-notice').textContent=message; };
-  const saveHost = () => {
-    if(!window.openai || !window.openai.setWidgetState) return;
-    const versions=state.versions.slice(-12).map(v=>({text:v.text.slice(0,2500),label:v.label,answers:v.answers}));
-    const snapshot={schema:3,scenario,draft:state.draft.slice(0,2500),original:state.original.slice(0,2500),stage:state.stage,chatDraft:state.chatDraft,skipped:state.skipped,answers:state.answers,versions,preview:null,compare:state.compare,route:state.route,completedOpen:el('pw-completed').open};
-    if(JSON.stringify(snapshot).length>14500) snapshot.versions=versions.slice(-3);
-    lastSavedSnapshot=JSON.stringify(snapshot);
-    window.openai.setWidgetState({modelContent:{example:examples[scenario].title,stage:state.stage,currentPrompt:state.draft.slice(0,2500)},privateContent:snapshot}).catch(()=>{});
-  };
   function checkpoint(label) {
     clearTimeout(pendingSave);
     if(state.draft!==state.versions[state.versions.length-1].text) state.versions.push({text:state.draft,label,answers:{...state.answers}});
@@ -595,7 +586,7 @@
         const p=document.createElement('p');p.className='pw-covered-copy';p.textContent='This suggestion won’t change your prompt.';article.append(p);
         const reconsider=document.createElement('button');reconsider.type='button';reconsider.className='pw-button pw-quiet cursor-interaction';reconsider.textContent='Reconsider';
         reconsider.disabled=state.preview!==null;
-        reconsider.addEventListener('click',()=>{if(busy)return;state.skipped=state.skipped.filter(id=>id!==card.id);renderCards();saveHost();});article.append(reconsider);
+        reconsider.addEventListener('click',()=>{if(busy)return;state.skipped=state.skipped.filter(id=>id!==card.id);renderCards();});article.append(reconsider);
       } else {
         const question=document.createElement('p');question.textContent=card.question;article.append(question);
         const input=document.createElement('input');input.id='pw-answer-'+card.id;input.type='text';input.placeholder=card.placeholder;input.setAttribute('aria-label',card.question);input.value=activeAnswers[card.id]||'';article.append(input);
@@ -646,7 +637,7 @@
         flushManual();
         state.preview=index===state.versions.length-1?null:index;
         el('pw-editor').value=state.preview===null?state.draft:state.versions[index].text;
-        renderHistory();renderCards();notify(state.preview===null?'Current draft selected.':'Previewing v'+(index+1)+'. Your current draft is preserved.');saveHost();
+        renderHistory();renderCards();notify(state.preview===null?'Current draft selected.':'Previewing v'+(index+1)+'. Your current draft is preserved.');
       });timeline.append(button);
     });
     const previewing=state.preview!==null;
@@ -728,19 +719,19 @@
     for(const node of scene.querySelectorAll('[id]'))node.removeAttribute('id');
     const source={rect:sourceNode.getBoundingClientRect(),scene,rootHeight:root.getBoundingClientRect().height,appHeight:app.getBoundingClientRect().height,fontSize:parseFloat(sourceStyle.fontSize),lineHeight:parseFloat(sourceStyle.lineHeight)/parseFloat(sourceStyle.fontSize),paddingTop:parseFloat(sourceStyle.paddingTop),paddingBottom:parseFloat(sourceStyle.paddingBottom)};
     cancelEffects();state.stage='workshop';state.chatDraft=false;state.preview=null;notify('');
-    enterWorkshop(source);saveHost();
+    enterWorkshop(source);
   }
   function send(route) {
     if(returning||!state.draft.trim())return;
     if(state.stage==='workshop'){returnToChat('sent',route);return;}
-    cancelEffects();flushManual();state.stage='sent';state.chatDraft=false;state.route=route;state.preview=null;render();saveHost();
+    cancelEffects();flushManual();state.stage='sent';state.chatDraft=false;state.route=route;state.preview=null;render();
   }
   function navigateStep(destination) {
     if(busy||destination===state.stage)return;
     if(destination==='workshop'){workshop();return;}
     if(destination==='sent'){send(state.stage==='workshop'?'Current prompt sent from workshop':'Current prompt sent from chat');return;}
     if(state.stage==='workshop'){returnToChat('chat');return;}
-    cancelEffects();flushManual();state.stage='chat';state.chatDraft=true;state.preview=null;sidebarOpen=false;render();saveHost();
+    cancelEffects();flushManual();state.stage='chat';state.chatDraft=true;state.preview=null;sidebarOpen=false;render();
   }
   async function returnToChat(destination,route=''){
     if(returning)return;
@@ -749,13 +740,13 @@
     const sourceStyle=getComputedStyle(el('pw-editor'));
     const text=state.draft;
     state.stage=destination;state.chatDraft=destination==='chat';state.route=route;sidebarOpen=false;
-    if(reducedMotion()){render();setBusy(false);saveHost();if(state.chatDraft)el('pw-composer-input').focus({preventScroll:true});return;}
+    if(reducedMotion()){render();setBusy(false);if(state.chatDraft)el('pw-composer-input').focus({preventScroll:true});return;}
     const epoch=++effectEpoch;returning=true;setBusy(true);
     root.classList.add('pw-returning');if(destination==='sent')root.classList.add('pw-response-pending');
     root.dataset.transition='return-lift';root.style.height=bounds.height+'px';root.style.overflow='clip';
     const clone=document.createElement('div');clone.className='pw-flying-prompt';clone.textContent=text;clone.setAttribute('aria-hidden','true');
     Object.assign(clone.style,{left:(source.left-bounds.left)+'px',top:(source.top-bounds.top)+'px',width:source.width+'px',height:source.height+'px',fontSize:sourceStyle.fontSize,lineHeight:sourceStyle.lineHeight,padding:sourceStyle.padding,borderWidth:'0px'});
-    const layer=document.createElement('div');layer.className='pw-flight-layer';layer.setAttribute('aria-hidden','true');layer.append(clone);root.append(layer);flight=layer;saveHost();
+    const layer=document.createElement('div');layer.className='pw-flight-layer';layer.setAttribute('aria-hidden','true');layer.append(clone);root.append(layer);flight=layer;
     const departures=[...root.querySelectorAll('#pw-workshop-view .pw-history,#pw-workshop-view .pw-suggestions-side,#pw-workshop-view .pw-section-heading,#pw-workshop-view .pw-workshop-top,#pw-workshop-view .pw-workshop-bottom,#pw-notice')];
     await Promise.all([animateElement(clone,[{transform:'translateY(0)'},{transform:'translateY(-8px)'}],150),...departures.map(node=>animateElement(node,[{opacity:1},{opacity:0,transform:'translateY(6px)'}],150))]);
     if(epoch!==effectEpoch)return;
@@ -786,7 +777,7 @@
       root.classList.remove('pw-response-pending');
       animateElement(el('pw-sent-view').querySelector('.pw-assistant'),[{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],240);
     }
-    returning=false;delete root.dataset.transition;setBusy(false);saveHost();
+    returning=false;delete root.dataset.transition;setBusy(false);
     if(destination==='chat')el('pw-composer-input').focus({preventScroll:true});
   }
   function selectExample(key) {
@@ -794,7 +785,7 @@
     if(state){cancelEffects();flushManual();states[scenario]=state;}
     scenario=key;state=states[key]||fresh(key);states[key]=state;activeAnswers={};editingAnswer=null;notify('');render();
   }
-  el('pw-example').addEventListener('change',event=>{selectExample(event.target.value);saveHost();});
+  el('pw-example').addEventListener('change',event=>{selectExample(event.target.value);});
   function renderSidebar(){
     root.querySelector('.pw-app').dataset.sidebarOpen=String(sidebarOpen&&state.stage!=='workshop');
     el('pw-sidebar-shade').hidden=!sidebarOpen||state.stage==='workshop';
@@ -806,7 +797,7 @@
   el('pw-sidebar-close').addEventListener('click',closeSidebar);
   el('pw-sidebar-shade').addEventListener('click',closeSidebar);
   root.addEventListener('keydown',event=>{if(event.key==='Escape'&&sidebarOpen)closeSidebar();});
-  for(const item of root.querySelectorAll('[data-demo-example]'))item.addEventListener('click',()=>{selectExample(item.dataset.demoExample);saveHost();});
+  for(const item of root.querySelectorAll('[data-demo-example]'))item.addEventListener('click',()=>{selectExample(item.dataset.demoExample);});
   for(const step of root.querySelectorAll('[data-step]'))step.addEventListener('click',()=>navigateStep(step.dataset.step));
   el('pw-yes').addEventListener('click',workshop);
   el('pw-no').addEventListener('click',()=>send('Sent without workshop'));
@@ -822,7 +813,7 @@
     clearTimeout(pendingSave);
     notify('Editing… changes are grouped into a version when you pause.');
     renderCards();
-    pendingSave=setTimeout(()=>{checkpoint('Manual edit');renderChat();notify('Manual edit saved as a version.');saveHost();},900);
+    pendingSave=setTimeout(()=>{checkpoint('Manual edit');renderChat();notify('Manual edit saved as a version.');},900);
   });
   el('pw-composer-input').addEventListener('input',()=>{
     if(!state.chatDraft||busy)return;
@@ -831,31 +822,19 @@
     el('pw-compose-send').disabled=!state.draft.trim();
     el('pw-no').disabled=!state.draft.trim();
     el('pw-composer-note').textContent='Editing draft…';
-    pendingSave=setTimeout(()=>{checkpoint('Manual edit');renderChat();saveHost();},900);
+    pendingSave=setTimeout(()=>{checkpoint('Manual edit');renderChat();},900);
   });
-  el('pw-current').addEventListener('click',()=>{state.preview=null;el('pw-editor').value=state.draft;renderHistory();renderCards();notify('Current draft selected.');saveHost();});
-  el('pw-compare').addEventListener('click',()=>{if(state.preview===null)flushManual();state.compare=!state.compare;renderHistory();saveHost();});
+  el('pw-current').addEventListener('click',()=>{state.preview=null;el('pw-editor').value=state.draft;renderHistory();renderCards();notify('Current draft selected.');});
+  el('pw-compare').addEventListener('click',()=>{if(state.preview===null)flushManual();state.compare=!state.compare;renderHistory();});
   el('pw-restore').addEventListener('click',()=>{
     if(state.preview===null)return;
     const index=state.preview;state.draft=state.versions[index].text;
     state.answers={...state.versions[index].answers};editingAnswer=null;
     state.versions.push({text:state.draft,label:'Restored v'+(index+1),answers:{...state.answers}});state.preview=null;
-    el('pw-editor').value=state.draft;renderCards();renderHistory();renderChat();notify('Restored v'+(index+1)+' as a new version. Earlier versions are preserved.');saveHost();
+    el('pw-editor').value=state.draft;renderCards();renderHistory();renderChat();notify('Restored v'+(index+1)+' as a new version. Earlier versions are preserved.');
   });
-  function restoreHost(snapshot) {
-    if(!snapshot||snapshot.schema!==3||!examples[snapshot.scenario]||typeof snapshot.draft!=='string'||!Array.isArray(snapshot.versions)||!snapshot.versions.length||snapshot.versions.some(v=>typeof v.text!=='string'||typeof v.label!=='string'))return false;
-    if(state)cancelEffects();
-    scenario=snapshot.scenario;state={...fresh(scenario),...snapshot,preview:null};
-    if(!['chat','workshop','sent'].includes(state.stage))state.stage='chat';
-    if(!Array.isArray(state.skipped))state.skipped=[];
-    if(typeof state.chatDraft!=='boolean')state.chatDraft=false;
-    states[scenario]=state;el('pw-completed').open=!!snapshot.completedOpen;render();return true;
-  }
-  if(!restoreHost(window.openai?.widgetState?.privateContent))selectExample('portfolio');
-  window.addEventListener('openai:set_globals',event=>{
-    const snapshot=event.detail?.globals?.widgetState?.privateContent;
-    if(snapshot && JSON.stringify(snapshot)!==lastSavedSnapshot){clearTimeout(pendingSave);restoreHost(snapshot);}
-  });
+  // Preview progress belongs to this page instance; every load starts fresh.
+  selectExample('portfolio');
   new ResizeObserver(fitEditor).observe(root.querySelector('.pw-editor-side'));
   let composerWidth=-1;
   new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==composerWidth){composerWidth=width;fitComposer();}}).observe(root.querySelector('.pw-composer'));

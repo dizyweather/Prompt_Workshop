@@ -2379,65 +2379,16 @@ __PROMPT_WORKSHOP_FRAGMENT__
     globalThis.location.pathname,
     globalThis.location.search,
   ])}`;
-  const parseState = (serializedState) => {
-    if (
-      typeof serializedState !== "string" ||
-      new TextEncoder().encode(serializedState).length > 16 * 1024
-    ) {
-      throw new TypeError(
-        "Widget state must be a JSON object of at most 16 KiB",
-      );
-    }
-    /** @type {unknown} */
-    const state = JSON.parse(serializedState);
-    if (
-      state == null ||
-      typeof state !== "object" ||
-      Array.isArray(state) ||
-      ("imageIds" in state &&
-        (!Array.isArray(state.imageIds) || state.imageIds.length > 0))
-    ) {
-      throw new TypeError("Widget state must be a JSON object");
-    }
-    const storedState = { modelContent: null, privateContent: null, ...state };
-    const canonicalState = JSON.stringify(
-      storedState,
-      (_key, /** @type {unknown} */ value) => {
-        if (typeof value === "number" && !Number.isFinite(value)) {
-          throw new TypeError("Widget state must contain finite numbers");
-        }
-        return value;
-      },
-    );
-    if (new TextEncoder().encode(canonicalState).length > 16 * 1024) {
-      throw new TypeError(
-        "Widget state must be a JSON object of at most 16 KiB",
-      );
-    }
-    return storedState;
-  };
-  let storage = null;
-  let state = null;
+  // Remove only this preview's legacy entry; never persist new progress.
   try {
-    const localStorage = globalThis.localStorage;
-    const probeKey = `${storageKey}:probe`;
-    localStorage.setItem(probeKey, "1");
-    localStorage.removeItem(probeKey);
-    storage = localStorage;
-    const savedState = storage.getItem(storageKey);
-    if (savedState != null) {
-      try {
-        state = parseState(savedState);
-      } catch {
-        // Invalid saved state does not disable future writes.
-      }
-    }
+    globalThis.localStorage.removeItem(storageKey);
+    globalThis.localStorage.removeItem(`${storageKey}:probe`);
   } catch {
-    storage = null;
+    // The preview also works when browser storage is unavailable.
   }
   const initialGlobals = {
-    widgetState: state,
-    statePersistence: storage == null ? "none" : "local",
+    widgetState: null,
+    statePersistence: "none",
   };
 
   const channel = new MessageChannel();
@@ -2450,20 +2401,10 @@ __PROMPT_WORKSHOP_FRAGMENT__
       if (!Number.isSafeInteger(data.id) || data.id <= 0) {
         return;
       }
-      let ok = false;
-      try {
-        if (storage != null) {
-          const state = parseState(data.state);
-          storage.setItem(storageKey, JSON.stringify(state));
-          ok = true;
-        }
-      } catch {
-        // Storage denial, quota limits, and invalid state return a failed receipt.
-      }
       channel.port1.postMessage({
         type: "widget-state-result",
         id: data.id,
-        ok,
+        ok: false,
       });
       return;
     }

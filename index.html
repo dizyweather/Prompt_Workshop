@@ -2090,7 +2090,6 @@ html&gt;body{padding:0}&lt;/style&gt;
   let pendingSave;
   let activeAnswers = {};
   let editingAnswer = null;
-  let lastSavedSnapshot = &#x27;&#x27;;
   let busy = false;
   let entering = false;
   let revealed = null;
@@ -2186,14 +2185,14 @@ html&gt;body{padding:0}&lt;/style&gt;
     checkpoint(card.sectionLabel+&#x27; clarified&#x27;);renderChat();
     if(!await collapseCard(card,node,&#x27;Updated&#x27;,epoch))return;
     const previous=cardRects();setBusy(false);renderCards();renderHistory();moveRemaining(previous);icons();
-    notify(card.sectionLabel+&#x27; rewritten and saved. Find the answer in Completed.&#x27;);saveHost();
+    notify(card.sectionLabel+&#x27; rewritten and saved. Find the answer in Completed.&#x27;);
   }
   async function skipCard(card,node) {
     if(busy||state.preview!==null)return;
     state.skipped=[...new Set([...state.skipped,card.id])];editingAnswer=null;
     const epoch=++effectEpoch;setBusy(true);
     if(!await collapseCard(card,node,&#x27;Skipped&#x27;,epoch))return;
-    const previous=cardRects();setBusy(false);renderCards();moveRemaining(previous);icons();notify(card.label+&#x27; skipped. Its paragraph is unchanged.&#x27;);saveHost();
+    const previous=cardRects();setBusy(false);renderCards();moveRemaining(previous);icons();notify(card.label+&#x27; skipped. Its paragraph is unchanged.&#x27;);
   }
   async function enterWorkshop(source) {
     const epoch=++effectEpoch;
@@ -2275,14 +2274,6 @@ html&gt;body{padding:0}&lt;/style&gt;
     composer.style.height=Math.max(58,composer.scrollHeight)+&#x27;px&#x27;;
   }
   const notify = message =&gt; { el(&#x27;pw-notice&#x27;).textContent=message; };
-  const saveHost = () =&gt; {
-    if(!window.openai || !window.openai.setWidgetState) return;
-    const versions=state.versions.slice(-12).map(v=&gt;({text:v.text.slice(0,2500),label:v.label,answers:v.answers}));
-    const snapshot={schema:3,scenario,draft:state.draft.slice(0,2500),original:state.original.slice(0,2500),stage:state.stage,chatDraft:state.chatDraft,skipped:state.skipped,answers:state.answers,versions,preview:null,compare:state.compare,route:state.route,completedOpen:el(&#x27;pw-completed&#x27;).open};
-    if(JSON.stringify(snapshot).length&gt;14500) snapshot.versions=versions.slice(-3);
-    lastSavedSnapshot=JSON.stringify(snapshot);
-    window.openai.setWidgetState({modelContent:{example:examples[scenario].title,stage:state.stage,currentPrompt:state.draft.slice(0,2500)},privateContent:snapshot}).catch(()=&gt;{});
-  };
   function checkpoint(label) {
     clearTimeout(pendingSave);
     if(state.draft!==state.versions[state.versions.length-1].text) state.versions.push({text:state.draft,label,answers:{...state.answers}});
@@ -2377,7 +2368,7 @@ html&gt;body{padding:0}&lt;/style&gt;
         const p=document.createElement(&#x27;p&#x27;);p.className=&#x27;pw-covered-copy&#x27;;p.textContent=&#x27;This suggestion won’t change your prompt.&#x27;;article.append(p);
         const reconsider=document.createElement(&#x27;button&#x27;);reconsider.type=&#x27;button&#x27;;reconsider.className=&#x27;pw-button pw-quiet cursor-interaction&#x27;;reconsider.textContent=&#x27;Reconsider&#x27;;
         reconsider.disabled=state.preview!==null;
-        reconsider.addEventListener(&#x27;click&#x27;,()=&gt;{if(busy)return;state.skipped=state.skipped.filter(id=&gt;id!==card.id);renderCards();saveHost();});article.append(reconsider);
+        reconsider.addEventListener(&#x27;click&#x27;,()=&gt;{if(busy)return;state.skipped=state.skipped.filter(id=&gt;id!==card.id);renderCards();});article.append(reconsider);
       } else {
         const question=document.createElement(&#x27;p&#x27;);question.textContent=card.question;article.append(question);
         const input=document.createElement(&#x27;input&#x27;);input.id=&#x27;pw-answer-&#x27;+card.id;input.type=&#x27;text&#x27;;input.placeholder=card.placeholder;input.setAttribute(&#x27;aria-label&#x27;,card.question);input.value=activeAnswers[card.id]||&#x27;&#x27;;article.append(input);
@@ -2428,7 +2419,7 @@ html&gt;body{padding:0}&lt;/style&gt;
         flushManual();
         state.preview=index===state.versions.length-1?null:index;
         el(&#x27;pw-editor&#x27;).value=state.preview===null?state.draft:state.versions[index].text;
-        renderHistory();renderCards();notify(state.preview===null?&#x27;Current draft selected.&#x27;:&#x27;Previewing v&#x27;+(index+1)+&#x27;. Your current draft is preserved.&#x27;);saveHost();
+        renderHistory();renderCards();notify(state.preview===null?&#x27;Current draft selected.&#x27;:&#x27;Previewing v&#x27;+(index+1)+&#x27;. Your current draft is preserved.&#x27;);
       });timeline.append(button);
     });
     const previewing=state.preview!==null;
@@ -2510,19 +2501,19 @@ html&gt;body{padding:0}&lt;/style&gt;
     for(const node of scene.querySelectorAll(&#x27;[id]&#x27;))node.removeAttribute(&#x27;id&#x27;);
     const source={rect:sourceNode.getBoundingClientRect(),scene,rootHeight:root.getBoundingClientRect().height,appHeight:app.getBoundingClientRect().height,fontSize:parseFloat(sourceStyle.fontSize),lineHeight:parseFloat(sourceStyle.lineHeight)/parseFloat(sourceStyle.fontSize),paddingTop:parseFloat(sourceStyle.paddingTop),paddingBottom:parseFloat(sourceStyle.paddingBottom)};
     cancelEffects();state.stage=&#x27;workshop&#x27;;state.chatDraft=false;state.preview=null;notify(&#x27;&#x27;);
-    enterWorkshop(source);saveHost();
+    enterWorkshop(source);
   }
   function send(route) {
     if(returning||!state.draft.trim())return;
     if(state.stage===&#x27;workshop&#x27;){returnToChat(&#x27;sent&#x27;,route);return;}
-    cancelEffects();flushManual();state.stage=&#x27;sent&#x27;;state.chatDraft=false;state.route=route;state.preview=null;render();saveHost();
+    cancelEffects();flushManual();state.stage=&#x27;sent&#x27;;state.chatDraft=false;state.route=route;state.preview=null;render();
   }
   function navigateStep(destination) {
     if(busy||destination===state.stage)return;
     if(destination===&#x27;workshop&#x27;){workshop();return;}
     if(destination===&#x27;sent&#x27;){send(state.stage===&#x27;workshop&#x27;?&#x27;Current prompt sent from workshop&#x27;:&#x27;Current prompt sent from chat&#x27;);return;}
     if(state.stage===&#x27;workshop&#x27;){returnToChat(&#x27;chat&#x27;);return;}
-    cancelEffects();flushManual();state.stage=&#x27;chat&#x27;;state.chatDraft=true;state.preview=null;sidebarOpen=false;render();saveHost();
+    cancelEffects();flushManual();state.stage=&#x27;chat&#x27;;state.chatDraft=true;state.preview=null;sidebarOpen=false;render();
   }
   async function returnToChat(destination,route=&#x27;&#x27;){
     if(returning)return;
@@ -2531,13 +2522,13 @@ html&gt;body{padding:0}&lt;/style&gt;
     const sourceStyle=getComputedStyle(el(&#x27;pw-editor&#x27;));
     const text=state.draft;
     state.stage=destination;state.chatDraft=destination===&#x27;chat&#x27;;state.route=route;sidebarOpen=false;
-    if(reducedMotion()){render();setBusy(false);saveHost();if(state.chatDraft)el(&#x27;pw-composer-input&#x27;).focus({preventScroll:true});return;}
+    if(reducedMotion()){render();setBusy(false);if(state.chatDraft)el(&#x27;pw-composer-input&#x27;).focus({preventScroll:true});return;}
     const epoch=++effectEpoch;returning=true;setBusy(true);
     root.classList.add(&#x27;pw-returning&#x27;);if(destination===&#x27;sent&#x27;)root.classList.add(&#x27;pw-response-pending&#x27;);
     root.dataset.transition=&#x27;return-lift&#x27;;root.style.height=bounds.height+&#x27;px&#x27;;root.style.overflow=&#x27;clip&#x27;;
     const clone=document.createElement(&#x27;div&#x27;);clone.className=&#x27;pw-flying-prompt&#x27;;clone.textContent=text;clone.setAttribute(&#x27;aria-hidden&#x27;,&#x27;true&#x27;);
     Object.assign(clone.style,{left:(source.left-bounds.left)+&#x27;px&#x27;,top:(source.top-bounds.top)+&#x27;px&#x27;,width:source.width+&#x27;px&#x27;,height:source.height+&#x27;px&#x27;,fontSize:sourceStyle.fontSize,lineHeight:sourceStyle.lineHeight,padding:sourceStyle.padding,borderWidth:&#x27;0px&#x27;});
-    const layer=document.createElement(&#x27;div&#x27;);layer.className=&#x27;pw-flight-layer&#x27;;layer.setAttribute(&#x27;aria-hidden&#x27;,&#x27;true&#x27;);layer.append(clone);root.append(layer);flight=layer;saveHost();
+    const layer=document.createElement(&#x27;div&#x27;);layer.className=&#x27;pw-flight-layer&#x27;;layer.setAttribute(&#x27;aria-hidden&#x27;,&#x27;true&#x27;);layer.append(clone);root.append(layer);flight=layer;
     const departures=[...root.querySelectorAll(&#x27;#pw-workshop-view .pw-history,#pw-workshop-view .pw-suggestions-side,#pw-workshop-view .pw-section-heading,#pw-workshop-view .pw-workshop-top,#pw-workshop-view .pw-workshop-bottom,#pw-notice&#x27;)];
     await Promise.all([animateElement(clone,[{transform:&#x27;translateY(0)&#x27;},{transform:&#x27;translateY(-8px)&#x27;}],150),...departures.map(node=&gt;animateElement(node,[{opacity:1},{opacity:0,transform:&#x27;translateY(6px)&#x27;}],150))]);
     if(epoch!==effectEpoch)return;
@@ -2568,7 +2559,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       root.classList.remove(&#x27;pw-response-pending&#x27;);
       animateElement(el(&#x27;pw-sent-view&#x27;).querySelector(&#x27;.pw-assistant&#x27;),[{opacity:0,transform:&#x27;translateY(8px)&#x27;},{opacity:1,transform:&#x27;translateY(0)&#x27;}],240);
     }
-    returning=false;delete root.dataset.transition;setBusy(false);saveHost();
+    returning=false;delete root.dataset.transition;setBusy(false);
     if(destination===&#x27;chat&#x27;)el(&#x27;pw-composer-input&#x27;).focus({preventScroll:true});
   }
   function selectExample(key) {
@@ -2576,7 +2567,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     if(state){cancelEffects();flushManual();states[scenario]=state;}
     scenario=key;state=states[key]||fresh(key);states[key]=state;activeAnswers={};editingAnswer=null;notify(&#x27;&#x27;);render();
   }
-  el(&#x27;pw-example&#x27;).addEventListener(&#x27;change&#x27;,event=&gt;{selectExample(event.target.value);saveHost();});
+  el(&#x27;pw-example&#x27;).addEventListener(&#x27;change&#x27;,event=&gt;{selectExample(event.target.value);});
   function renderSidebar(){
     root.querySelector(&#x27;.pw-app&#x27;).dataset.sidebarOpen=String(sidebarOpen&amp;&amp;state.stage!==&#x27;workshop&#x27;);
     el(&#x27;pw-sidebar-shade&#x27;).hidden=!sidebarOpen||state.stage===&#x27;workshop&#x27;;
@@ -2588,7 +2579,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   el(&#x27;pw-sidebar-close&#x27;).addEventListener(&#x27;click&#x27;,closeSidebar);
   el(&#x27;pw-sidebar-shade&#x27;).addEventListener(&#x27;click&#x27;,closeSidebar);
   root.addEventListener(&#x27;keydown&#x27;,event=&gt;{if(event.key===&#x27;Escape&#x27;&amp;&amp;sidebarOpen)closeSidebar();});
-  for(const item of root.querySelectorAll(&#x27;[data-demo-example]&#x27;))item.addEventListener(&#x27;click&#x27;,()=&gt;{selectExample(item.dataset.demoExample);saveHost();});
+  for(const item of root.querySelectorAll(&#x27;[data-demo-example]&#x27;))item.addEventListener(&#x27;click&#x27;,()=&gt;{selectExample(item.dataset.demoExample);});
   for(const step of root.querySelectorAll(&#x27;[data-step]&#x27;))step.addEventListener(&#x27;click&#x27;,()=&gt;navigateStep(step.dataset.step));
   el(&#x27;pw-yes&#x27;).addEventListener(&#x27;click&#x27;,workshop);
   el(&#x27;pw-no&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;send(&#x27;Sent without workshop&#x27;));
@@ -2604,7 +2595,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     clearTimeout(pendingSave);
     notify(&#x27;Editing… changes are grouped into a version when you pause.&#x27;);
     renderCards();
-    pendingSave=setTimeout(()=&gt;{checkpoint(&#x27;Manual edit&#x27;);renderChat();notify(&#x27;Manual edit saved as a version.&#x27;);saveHost();},900);
+    pendingSave=setTimeout(()=&gt;{checkpoint(&#x27;Manual edit&#x27;);renderChat();notify(&#x27;Manual edit saved as a version.&#x27;);},900);
   });
   el(&#x27;pw-composer-input&#x27;).addEventListener(&#x27;input&#x27;,()=&gt;{
     if(!state.chatDraft||busy)return;
@@ -2613,31 +2604,19 @@ html&gt;body{padding:0}&lt;/style&gt;
     el(&#x27;pw-compose-send&#x27;).disabled=!state.draft.trim();
     el(&#x27;pw-no&#x27;).disabled=!state.draft.trim();
     el(&#x27;pw-composer-note&#x27;).textContent=&#x27;Editing draft…&#x27;;
-    pendingSave=setTimeout(()=&gt;{checkpoint(&#x27;Manual edit&#x27;);renderChat();saveHost();},900);
+    pendingSave=setTimeout(()=&gt;{checkpoint(&#x27;Manual edit&#x27;);renderChat();},900);
   });
-  el(&#x27;pw-current&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{state.preview=null;el(&#x27;pw-editor&#x27;).value=state.draft;renderHistory();renderCards();notify(&#x27;Current draft selected.&#x27;);saveHost();});
-  el(&#x27;pw-compare&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{if(state.preview===null)flushManual();state.compare=!state.compare;renderHistory();saveHost();});
+  el(&#x27;pw-current&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{state.preview=null;el(&#x27;pw-editor&#x27;).value=state.draft;renderHistory();renderCards();notify(&#x27;Current draft selected.&#x27;);});
+  el(&#x27;pw-compare&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{if(state.preview===null)flushManual();state.compare=!state.compare;renderHistory();});
   el(&#x27;pw-restore&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{
     if(state.preview===null)return;
     const index=state.preview;state.draft=state.versions[index].text;
     state.answers={...state.versions[index].answers};editingAnswer=null;
     state.versions.push({text:state.draft,label:&#x27;Restored v&#x27;+(index+1),answers:{...state.answers}});state.preview=null;
-    el(&#x27;pw-editor&#x27;).value=state.draft;renderCards();renderHistory();renderChat();notify(&#x27;Restored v&#x27;+(index+1)+&#x27; as a new version. Earlier versions are preserved.&#x27;);saveHost();
+    el(&#x27;pw-editor&#x27;).value=state.draft;renderCards();renderHistory();renderChat();notify(&#x27;Restored v&#x27;+(index+1)+&#x27; as a new version. Earlier versions are preserved.&#x27;);
   });
-  function restoreHost(snapshot) {
-    if(!snapshot||snapshot.schema!==3||!examples[snapshot.scenario]||typeof snapshot.draft!==&#x27;string&#x27;||!Array.isArray(snapshot.versions)||!snapshot.versions.length||snapshot.versions.some(v=&gt;typeof v.text!==&#x27;string&#x27;||typeof v.label!==&#x27;string&#x27;))return false;
-    if(state)cancelEffects();
-    scenario=snapshot.scenario;state={...fresh(scenario),...snapshot,preview:null};
-    if(![&#x27;chat&#x27;,&#x27;workshop&#x27;,&#x27;sent&#x27;].includes(state.stage))state.stage=&#x27;chat&#x27;;
-    if(!Array.isArray(state.skipped))state.skipped=[];
-    if(typeof state.chatDraft!==&#x27;boolean&#x27;)state.chatDraft=false;
-    states[scenario]=state;el(&#x27;pw-completed&#x27;).open=!!snapshot.completedOpen;render();return true;
-  }
-  if(!restoreHost(window.openai?.widgetState?.privateContent))selectExample(&#x27;portfolio&#x27;);
-  window.addEventListener(&#x27;openai:set_globals&#x27;,event=&gt;{
-    const snapshot=event.detail?.globals?.widgetState?.privateContent;
-    if(snapshot &amp;&amp; JSON.stringify(snapshot)!==lastSavedSnapshot){clearTimeout(pendingSave);restoreHost(snapshot);}
-  });
+  // Preview progress belongs to this page instance; every load starts fresh.
+  selectExample(&#x27;portfolio&#x27;);
   new ResizeObserver(fitEditor).observe(root.querySelector(&#x27;.pw-editor-side&#x27;));
   let composerWidth=-1;
   new ResizeObserver(entries=&gt;{const width=entries[0].contentRect.width;if(width!==composerWidth){composerWidth=width;fitComposer();}}).observe(root.querySelector(&#x27;.pw-composer&#x27;));
@@ -3249,65 +3228,16 @@ html&gt;body{padding:0}&lt;/style&gt;
     globalThis.location.pathname,
     globalThis.location.search,
   ])}`;
-  const parseState = (serializedState) => {
-    if (
-      typeof serializedState !== "string" ||
-      new TextEncoder().encode(serializedState).length > 16 * 1024
-    ) {
-      throw new TypeError(
-        "Widget state must be a JSON object of at most 16 KiB",
-      );
-    }
-    /** @type {unknown} */
-    const state = JSON.parse(serializedState);
-    if (
-      state == null ||
-      typeof state !== "object" ||
-      Array.isArray(state) ||
-      ("imageIds" in state &&
-        (!Array.isArray(state.imageIds) || state.imageIds.length > 0))
-    ) {
-      throw new TypeError("Widget state must be a JSON object");
-    }
-    const storedState = { modelContent: null, privateContent: null, ...state };
-    const canonicalState = JSON.stringify(
-      storedState,
-      (_key, /** @type {unknown} */ value) => {
-        if (typeof value === "number" && !Number.isFinite(value)) {
-          throw new TypeError("Widget state must contain finite numbers");
-        }
-        return value;
-      },
-    );
-    if (new TextEncoder().encode(canonicalState).length > 16 * 1024) {
-      throw new TypeError(
-        "Widget state must be a JSON object of at most 16 KiB",
-      );
-    }
-    return storedState;
-  };
-  let storage = null;
-  let state = null;
+  // Remove only this preview's legacy entry; never persist new progress.
   try {
-    const localStorage = globalThis.localStorage;
-    const probeKey = `${storageKey}:probe`;
-    localStorage.setItem(probeKey, "1");
-    localStorage.removeItem(probeKey);
-    storage = localStorage;
-    const savedState = storage.getItem(storageKey);
-    if (savedState != null) {
-      try {
-        state = parseState(savedState);
-      } catch {
-        // Invalid saved state does not disable future writes.
-      }
-    }
+    globalThis.localStorage.removeItem(storageKey);
+    globalThis.localStorage.removeItem(`${storageKey}:probe`);
   } catch {
-    storage = null;
+    // The preview also works when browser storage is unavailable.
   }
   const initialGlobals = {
-    widgetState: state,
-    statePersistence: storage == null ? "none" : "local",
+    widgetState: null,
+    statePersistence: "none",
   };
 
   const channel = new MessageChannel();
@@ -3320,20 +3250,10 @@ html&gt;body{padding:0}&lt;/style&gt;
       if (!Number.isSafeInteger(data.id) || data.id <= 0) {
         return;
       }
-      let ok = false;
-      try {
-        if (storage != null) {
-          const state = parseState(data.state);
-          storage.setItem(storageKey, JSON.stringify(state));
-          ok = true;
-        }
-      } catch {
-        // Storage denial, quota limits, and invalid state return a failed receipt.
-      }
       channel.port1.postMessage({
         type: "widget-state-result",
         id: data.id,
-        ok,
+        ok: false,
       });
       return;
     }

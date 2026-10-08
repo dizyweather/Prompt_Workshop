@@ -28,7 +28,7 @@ python tools/build_demo.py
 python tools/build_demo.py --check
 ```
 
-Icon and tooltip libraries are loaded from the exported shell's permitted CDNs. The main demo interactions and content do not need a network connection. The browser remembers the latest demo state locally.
+Icon and tooltip libraries are loaded from the exported shell's permitted CDNs. The main demo interactions and content do not need a network connection. Progress stays in memory while the page is open, so switching examples preserves each draft, completed suggestions, and version history. Refreshing or reopening the preview resets both examples to their original prompts, starting in the Photography chat. The preview does not save progress to browser storage or the chat host, and removes its previously saved browser entry when opened.
 
 ## Review checks
 
