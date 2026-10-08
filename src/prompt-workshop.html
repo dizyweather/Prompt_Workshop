@@ -196,7 +196,7 @@
         <span class="pw-avatar"><i data-lucide="sparkles" aria-hidden="true"></i></span>
         <div class="pw-assistant-body">
           <div id="pw-invitation" class="pw-invite">
-            <h2 id="pw-invite-title">Want to improve this prompt together?</h2>
+            <h2 id="pw-invite-title">A little more detail could help.</h2>
             <p id="pw-invite-copy"></p>
             <div class="pw-row">
               <button type="button" id="pw-yes" class="pw-button pw-primary cursor-interaction">Yes, improve it <i data-lucide="arrow-right" aria-hidden="true"></i></button>
@@ -283,7 +283,7 @@
   const el = id => root.querySelector('#' + id);
   const examples = {
     portfolio: {
-      title:'Photography website', prompt:'Help me make a website for my photography. I want it to show my work well.\n\nI’m not sure who to design it for, so help me figure out what visitors need.\n\nGive me something I can use to get started.', invite:'Let’s clarify the purpose, visitors, and first result. We can reshape each part of your request together.',
+      title:'Photography website', prompt:'Help me make a website for my photography. I want it to show my work well.\n\nI’m not sure who to design it for, so help me figure out what visitors need.\n\nGive me something I can use to get started.', invite:'Your prompt leaves a few things open. Want to clarify them together before sending?',
       context:[['You','I’m putting together a collection of my street photographs.'],['ChatGPT','What would you like to create with them?']],
       cards:[
         {id:'purpose', label:'Purpose', section:0, sectionLabel:'Purpose', question:'What should the website help you do?', why:'This rewrites the opening paragraph around your goal.', placeholder:'Describe the main purpose', choices:['Express my artistic identity','Attract photography clients','Share a personal collection']},
@@ -293,7 +293,7 @@
       ]
     },
     study: {
-      title:'Biology study plan', prompt:'Help me prepare for my biology exam. I want to cover everything and feel more confident.\n\nI can study a bit each day, so make a schedule I can follow.\n\nGive me some ways to practice and see if I understand the material.', invite:'I know your exam is in two weeks. Let’s clarify the topics, study time, and practice you want.',
+      title:'Biology study plan', prompt:'Help me prepare for my biology exam. I want to cover everything and feel more confident.\n\nI can study a bit each day, so make a schedule I can follow.\n\nGive me some ways to practice and see if I understand the material.', invite:'Your prompt leaves a few things open. Want to clarify them together before sending?',
       context:[['You','My biology exam is in two weeks.'],['ChatGPT','I can help you prepare. What would you like to work on?']],
       cards:[
         {id:'topics', label:'Exam topics', section:0, sectionLabel:'Focus', question:'Which topics will the exam cover?', why:'This rewrites the opening paragraph around the exam material.', placeholder:'For example, cell biology and genetics', choices:['Cell biology and genetics','Evolution and ecology']},
@@ -674,7 +674,7 @@
     const example=examples[scenario];
     el('pw-chat-prompt').textContent=state.draft;
     el('pw-chat-prompt').hidden=state.chatDraft;
-    el('pw-invite-title').textContent=state.chatDraft?'Your prompt is saved as a draft':'Want to improve this prompt together?';
+    el('pw-invite-title').textContent=state.chatDraft?'Your prompt is saved as a draft':'A little more detail could help.';
     el('pw-invite-copy').textContent=state.chatDraft?'Edit your draft below, return to the workshop, or send it when you’re ready.':state.versions.length>1?'Your revised draft is saved. Continue shaping it, or send it as it is.':example.invite;
     el('pw-yes').firstChild.textContent=state.chatDraft?'Continue in workshop ':state.versions.length>1?'Yes, keep improving ':'Yes, improve it ';
     el('pw-no').textContent=state.chatDraft?'Send draft':'No, send as is';

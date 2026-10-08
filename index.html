@@ -1978,7 +1978,7 @@ html&gt;body{padding:0}&lt;/style&gt;
         &lt;span class=&quot;pw-avatar&quot;&gt;&lt;i data-lucide=&quot;sparkles&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
         &lt;div class=&quot;pw-assistant-body&quot;&gt;
           &lt;div id=&quot;pw-invitation&quot; class=&quot;pw-invite&quot;&gt;
-            &lt;h2 id=&quot;pw-invite-title&quot;&gt;Want to improve this prompt together?&lt;/h2&gt;
+            &lt;h2 id=&quot;pw-invite-title&quot;&gt;A little more detail could help.&lt;/h2&gt;
             &lt;p id=&quot;pw-invite-copy&quot;&gt;&lt;/p&gt;
             &lt;div class=&quot;pw-row&quot;&gt;
               &lt;button type=&quot;button&quot; id=&quot;pw-yes&quot; class=&quot;pw-button pw-primary cursor-interaction&quot;&gt;Yes, improve it &lt;i data-lucide=&quot;arrow-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
@@ -2065,7 +2065,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   const el = id =&gt; root.querySelector(&#x27;#&#x27; + id);
   const examples = {
     portfolio: {
-      title:&#x27;Photography website&#x27;, prompt:&#x27;Help me make a website for my photography. I want it to show my work well.\n\nI’m not sure who to design it for, so help me figure out what visitors need.\n\nGive me something I can use to get started.&#x27;, invite:&#x27;Let’s clarify the purpose, visitors, and first result. We can reshape each part of your request together.&#x27;,
+      title:&#x27;Photography website&#x27;, prompt:&#x27;Help me make a website for my photography. I want it to show my work well.\n\nI’m not sure who to design it for, so help me figure out what visitors need.\n\nGive me something I can use to get started.&#x27;, invite:&#x27;Your prompt leaves a few things open. Want to clarify them together before sending?&#x27;,
       context:[[&#x27;You&#x27;,&#x27;I’m putting together a collection of my street photographs.&#x27;],[&#x27;ChatGPT&#x27;,&#x27;What would you like to create with them?&#x27;]],
       cards:[
         {id:&#x27;purpose&#x27;, label:&#x27;Purpose&#x27;, section:0, sectionLabel:&#x27;Purpose&#x27;, question:&#x27;What should the website help you do?&#x27;, why:&#x27;This rewrites the opening paragraph around your goal.&#x27;, placeholder:&#x27;Describe the main purpose&#x27;, choices:[&#x27;Express my artistic identity&#x27;,&#x27;Attract photography clients&#x27;,&#x27;Share a personal collection&#x27;]},
@@ -2075,7 +2075,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       ]
     },
     study: {
-      title:&#x27;Biology study plan&#x27;, prompt:&#x27;Help me prepare for my biology exam. I want to cover everything and feel more confident.\n\nI can study a bit each day, so make a schedule I can follow.\n\nGive me some ways to practice and see if I understand the material.&#x27;, invite:&#x27;I know your exam is in two weeks. Let’s clarify the topics, study time, and practice you want.&#x27;,
+      title:&#x27;Biology study plan&#x27;, prompt:&#x27;Help me prepare for my biology exam. I want to cover everything and feel more confident.\n\nI can study a bit each day, so make a schedule I can follow.\n\nGive me some ways to practice and see if I understand the material.&#x27;, invite:&#x27;Your prompt leaves a few things open. Want to clarify them together before sending?&#x27;,
       context:[[&#x27;You&#x27;,&#x27;My biology exam is in two weeks.&#x27;],[&#x27;ChatGPT&#x27;,&#x27;I can help you prepare. What would you like to work on?&#x27;]],
       cards:[
         {id:&#x27;topics&#x27;, label:&#x27;Exam topics&#x27;, section:0, sectionLabel:&#x27;Focus&#x27;, question:&#x27;Which topics will the exam cover?&#x27;, why:&#x27;This rewrites the opening paragraph around the exam material.&#x27;, placeholder:&#x27;For example, cell biology and genetics&#x27;, choices:[&#x27;Cell biology and genetics&#x27;,&#x27;Evolution and ecology&#x27;]},
@@ -2456,7 +2456,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     const example=examples[scenario];
     el(&#x27;pw-chat-prompt&#x27;).textContent=state.draft;
     el(&#x27;pw-chat-prompt&#x27;).hidden=state.chatDraft;
-    el(&#x27;pw-invite-title&#x27;).textContent=state.chatDraft?&#x27;Your prompt is saved as a draft&#x27;:&#x27;Want to improve this prompt together?&#x27;;
+    el(&#x27;pw-invite-title&#x27;).textContent=state.chatDraft?&#x27;Your prompt is saved as a draft&#x27;:&#x27;A little more detail could help.&#x27;;
     el(&#x27;pw-invite-copy&#x27;).textContent=state.chatDraft?&#x27;Edit your draft below, return to the workshop, or send it when you’re ready.&#x27;:state.versions.length&gt;1?&#x27;Your revised draft is saved. Continue shaping it, or send it as it is.&#x27;:example.invite;
     el(&#x27;pw-yes&#x27;).firstChild.textContent=state.chatDraft?&#x27;Continue in workshop &#x27;:state.versions.length&gt;1?&#x27;Yes, keep improving &#x27;:&#x27;Yes, improve it &#x27;;
     el(&#x27;pw-no&#x27;).textContent=state.chatDraft?&#x27;Send draft&#x27;:&#x27;No, send as is&#x27;;
