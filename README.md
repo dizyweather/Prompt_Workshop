@@ -6,7 +6,7 @@ A senior thesis interface prototype for helping novice users clarify a prompt be
 
 Open `index.html` in a browser. No server, API keys, or installation is needed. Choose the photography website or biology study plan example, then select **Yes, improve it** to enter the workshop or **No, send as is** to skip it.
 
-The initial chat view includes sample projects and previous chats. The photography and biology chat entries switch between the two staged examples. On narrow screens, use the sidebar button to open the navigation.
+The initial chat view includes sample projects and two clickable previous chats. The photography and biology chat entries switch between the two staged examples. On narrow screens, use the sidebar button to open the navigation. The numbered **Chat**, **Workshop**, and **Sent** steps also navigate between sections, preserving the draft and version history. Selecting **Sent** sends the current draft into the simulated response view.
 
 The workshop supports direct editing, optional suggestion cards, animated paragraph rewrites, a Completed drawer, and version history with comparison and restoration. A prompt jump and circular ripple reveal the workshop when entering it.
 

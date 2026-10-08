@@ -1813,7 +1813,9 @@ html&gt;body{padding:0}&lt;/style&gt;
 #pw-demo .pw-brand { display:flex; flex-wrap:wrap; align-items:center; gap:10px; max-width:100%; font-size:18px; font-weight:500; }
 #pw-demo .pw-brand small { font-size:12px; font-weight:400; color:var(--pw-muted); }
 #pw-demo .pw-steps { display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--pw-muted); font-size:12px; }
-#pw-demo .pw-step { display:flex; align-items:center; gap:6px; }
+#pw-demo .pw-step { display:flex; align-items:center; gap:6px; padding:3px 0; border:0; border-radius:6px; background:transparent; color:var(--pw-muted); font-size:12px; }
+#pw-demo .pw-step:hover:not(:disabled) { background:var(--pw-raised); color:var(--pw-text); }
+#pw-demo .pw-step:focus-visible { outline:2px solid var(--pw-muted); outline-offset:3px; }
 #pw-demo .pw-step span { display:inline-grid; place-items:center; border:1px solid var(--pw-line); border-radius:50%; width:23px; height:23px; }
 #pw-demo .pw-step.pw-active { color:var(--pw-text); font-weight:500; }
 #pw-demo .pw-step.pw-active span { color:var(--pw-on-action); background:var(--pw-action); border-color:var(--pw-action); }
@@ -1951,10 +1953,6 @@ html&gt;body{padding:0}&lt;/style&gt;
         &lt;h2&gt;Your chats&lt;/h2&gt;
         &lt;button type=&quot;button&quot; class=&quot;pw-sidebar-item cursor-interaction&quot; data-demo-example=&quot;portfolio&quot; aria-current=&quot;page&quot;&gt;Photography website&lt;/button&gt;
         &lt;button type=&quot;button&quot; class=&quot;pw-sidebar-item cursor-interaction&quot; data-demo-example=&quot;study&quot;&gt;Biology study plan&lt;/button&gt;
-        &lt;div class=&quot;pw-sidebar-item&quot;&gt;Communication frameworks&lt;/div&gt;
-        &lt;div class=&quot;pw-sidebar-item&quot;&gt;Street photography ideas&lt;/div&gt;
-        &lt;div class=&quot;pw-sidebar-item&quot;&gt;Notes from my advisor&lt;/div&gt;
-        &lt;div class=&quot;pw-sidebar-item&quot;&gt;Planning my semester&lt;/div&gt;
       &lt;/nav&gt;
       &lt;div class=&quot;pw-sidebar-profile&quot;&gt;&lt;span class=&quot;pw-profile-avatar&quot;&gt;JD&lt;/span&gt;&lt;div&gt;Jamie Davis&lt;small&gt;Demo account&lt;/small&gt;&lt;/div&gt;&lt;/div&gt;
     &lt;/aside&gt;
@@ -1962,13 +1960,13 @@ html&gt;body{padding:0}&lt;/style&gt;
     &lt;div class=&quot;pw-main&quot;&gt;
     &lt;header class=&quot;pw-header&quot;&gt;
       &lt;div class=&quot;pw-brand&quot;&gt;&lt;button type=&quot;button&quot; id=&quot;pw-sidebar-toggle&quot; class=&quot;pw-button pw-quiet pw-sidebar-toggle cursor-interaction&quot; aria-label=&quot;Open sidebar&quot; aria-controls=&quot;pw-sidebar&quot; aria-expanded=&quot;false&quot;&gt;&lt;i data-lucide=&quot;panel-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Chats&lt;/button&gt; ChatGPT &lt;small id=&quot;pw-header-sub&quot;&gt;Photography website&lt;/small&gt;&lt;/div&gt;
-      &lt;div class=&quot;pw-steps&quot; aria-label=&quot;Prompt journey&quot;&gt;
-        &lt;div class=&quot;pw-step pw-active&quot; data-step=&quot;chat&quot;&gt;&lt;span&gt;1&lt;/span&gt; Chat&lt;/div&gt;
+      &lt;nav class=&quot;pw-steps&quot; aria-label=&quot;Prompt journey&quot;&gt;
+        &lt;button type=&quot;button&quot; class=&quot;pw-step pw-active cursor-interaction&quot; data-step=&quot;chat&quot; aria-controls=&quot;pw-chat-view&quot;&gt;&lt;span aria-hidden=&quot;true&quot;&gt;1&lt;/span&gt; Chat&lt;/button&gt;
         &lt;div class=&quot;pw-step-line&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
-        &lt;div class=&quot;pw-step&quot; data-step=&quot;workshop&quot;&gt;&lt;span&gt;2&lt;/span&gt; Workshop&lt;/div&gt;
+        &lt;button type=&quot;button&quot; class=&quot;pw-step cursor-interaction&quot; data-step=&quot;workshop&quot; aria-controls=&quot;pw-workshop-view&quot;&gt;&lt;span aria-hidden=&quot;true&quot;&gt;2&lt;/span&gt; Workshop&lt;/button&gt;
         &lt;div class=&quot;pw-step-line&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
-        &lt;div class=&quot;pw-step&quot; data-step=&quot;sent&quot;&gt;&lt;span&gt;3&lt;/span&gt; Sent&lt;/div&gt;
-      &lt;/div&gt;
+        &lt;button type=&quot;button&quot; class=&quot;pw-step cursor-interaction&quot; data-step=&quot;sent&quot; aria-controls=&quot;pw-sent-view&quot;&gt;&lt;span aria-hidden=&quot;true&quot;&gt;3&lt;/span&gt; Sent&lt;/button&gt;
+      &lt;/nav&gt;
     &lt;/header&gt;
     &lt;div id=&quot;pw-chat-view&quot; class=&quot;pw-chat&quot;&gt;
       &lt;details id=&quot;pw-chat-context&quot; class=&quot;pw-context&quot;&gt;
@@ -2114,6 +2112,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     el(&#x27;pw-no&#x27;).disabled=returning||!state.draft.trim();
     el(&#x27;pw-back&#x27;).disabled=returning;
     el(&#x27;pw-finish&#x27;).disabled=returning;
+    for(const step of root.querySelectorAll(&#x27;[data-step]&#x27;))step.disabled=value||(step.dataset.step===&#x27;sent&#x27;&amp;&amp;!state.draft.trim());
     el(&#x27;pw-timeline&#x27;).closest(&#x27;.pw-history&#x27;).inert=value;
     el(&#x27;pw-cards&#x27;).inert=value;el(&#x27;pw-completed&#x27;).inert=value;
     el(&#x27;pw-finish&#x27;).firstChild.textContent=value&amp;&amp;activeRewrite?&#x27;Finish &amp; send &#x27;:&#x27;Send current prompt &#x27;;
@@ -2487,6 +2486,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     [&#x27;chat&#x27;,&#x27;workshop&#x27;,&#x27;sent&#x27;].forEach(stage=&gt;{
       el(&#x27;pw-&#x27;+stage+&#x27;-view&#x27;).hidden=state.stage!==stage;
       const step=root.querySelector(&#x27;[data-step=&quot;&#x27;+stage+&#x27;&quot;]&#x27;);step.classList.toggle(&#x27;pw-active&#x27;,state.stage===stage);
+      step.disabled=busy||(stage===&#x27;sent&#x27;&amp;&amp;!state.draft.trim());
       if(state.stage===stage) step.setAttribute(&#x27;aria-current&#x27;,&#x27;step&#x27;);else step.removeAttribute(&#x27;aria-current&#x27;);
     });
     renderContext(el(&#x27;pw-chat-context-content&#x27;));renderContext(el(&#x27;pw-workshop-context-content&#x27;));
@@ -2515,6 +2515,13 @@ html&gt;body{padding:0}&lt;/style&gt;
     if(returning||!state.draft.trim())return;
     if(state.stage===&#x27;workshop&#x27;){returnToChat(&#x27;sent&#x27;,route);return;}
     cancelEffects();flushManual();state.stage=&#x27;sent&#x27;;state.chatDraft=false;state.route=route;state.preview=null;render();saveHost();
+  }
+  function navigateStep(destination) {
+    if(busy||destination===state.stage)return;
+    if(destination===&#x27;workshop&#x27;){workshop();return;}
+    if(destination===&#x27;sent&#x27;){send(state.stage===&#x27;workshop&#x27;?&#x27;Current prompt sent from workshop&#x27;:&#x27;Current prompt sent from chat&#x27;);return;}
+    if(state.stage===&#x27;workshop&#x27;){returnToChat(&#x27;chat&#x27;);return;}
+    cancelEffects();flushManual();state.stage=&#x27;chat&#x27;;state.chatDraft=true;state.preview=null;sidebarOpen=false;render();saveHost();
   }
   async function returnToChat(destination,route=&#x27;&#x27;){
     if(returning)return;
@@ -2581,6 +2588,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   el(&#x27;pw-sidebar-shade&#x27;).addEventListener(&#x27;click&#x27;,closeSidebar);
   root.addEventListener(&#x27;keydown&#x27;,event=&gt;{if(event.key===&#x27;Escape&#x27;&amp;&amp;sidebarOpen)closeSidebar();});
   for(const item of root.querySelectorAll(&#x27;[data-demo-example]&#x27;))item.addEventListener(&#x27;click&#x27;,()=&gt;{selectExample(item.dataset.demoExample);saveHost();});
+  for(const step of root.querySelectorAll(&#x27;[data-step]&#x27;))step.addEventListener(&#x27;click&#x27;,()=&gt;navigateStep(step.dataset.step));
   el(&#x27;pw-yes&#x27;).addEventListener(&#x27;click&#x27;,workshop);
   el(&#x27;pw-no&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;send(&#x27;Sent without workshop&#x27;));
   el(&#x27;pw-finish&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;send(&#x27;Current prompt sent from workshop&#x27;));
@@ -2590,6 +2598,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   el(&#x27;pw-editor&#x27;).addEventListener(&#x27;input&#x27;,()=&gt;{
     if(state.preview!==null||busy)return;
     state.draft=el(&#x27;pw-editor&#x27;).value;
+    root.querySelector(&#x27;[data-step=&quot;sent&quot;]&#x27;).disabled=!state.draft.trim();
     fitEditor();
     clearTimeout(pendingSave);
     notify(&#x27;Editing… changes are grouped into a version when you pause.&#x27;);
@@ -2599,6 +2608,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   el(&#x27;pw-composer-input&#x27;).addEventListener(&#x27;input&#x27;,()=&gt;{
     if(!state.chatDraft||busy)return;
     state.draft=el(&#x27;pw-composer-input&#x27;).value;fitComposer();clearTimeout(pendingSave);
+    root.querySelector(&#x27;[data-step=&quot;sent&quot;]&#x27;).disabled=!state.draft.trim();
     el(&#x27;pw-compose-send&#x27;).disabled=!state.draft.trim();
     el(&#x27;pw-no&#x27;).disabled=!state.draft.trim();
     el(&#x27;pw-composer-note&#x27;).textContent=&#x27;Editing draft…&#x27;;
